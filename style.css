@@ -495,3 +495,56 @@ code {
     padding-top: 14px;
   }
 }
+/* テーブル見出し固定 */
+.table-wrap,
+.table-wrapper,
+.table-scroll,
+.library-table-wrap {
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  position: relative;
+}
+
+table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(18, 24, 38, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+/* クリック式ヘッダー */
+.th-sort {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+
+.th-sort:hover {
+  opacity: 0.8;
+}
+
+.sort-mark {
+  font-size: 0.75em;
+  opacity: 0.75;
+}
+
+/* アーティスト列は1行省略 */
+.artist-cell {
+  max-width: min(34vw, 360px);
+}
+
+.artist-line {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

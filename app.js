@@ -209,6 +209,12 @@ function applyFilters() {
     } else if (sortKey === "date") {
       valueA = new Date(a.latestSavedAt || 0).getTime();
       valueB = new Date(b.latestSavedAt || 0).getTime();
+    } else if (sortKey === "logs") {
+      valueA = a.records.length;
+      valueB = b.records.length;
+    } else if (sortKey === "source") {
+      valueA = normalizeText(a.sources.join(" / "));
+      valueB = normalizeText(b.sources.join(" / "));
     }
 
     if (valueA < valueB) return direction === "asc" ? -1 : 1;
@@ -217,6 +223,7 @@ function applyFilters() {
   });
 
   state.filteredGroups = groups;
+  updateSortHeaders();
   renderTable();
 }
 
@@ -251,19 +258,18 @@ function renderTable() {
             <strong>${escapeHtml(group.title)}</strong>
             <small>${escapeHtml(group.album || group.note || "保存済みBPMデータ")}</small>
           </td>
-          <td class="artist-cell">
-            ${escapeHtml(group.artist)}
-            <small>${escapeHtml(group.contextTitle || "曲単位で集約")}</small>
+          <td class="artist-cell" title="${escapeAttr(group.artist)}">
+            <span class="artist-line">${escapeHtml(group.artist)}</span>
           </td>
           <td>
             <span class="bpm-pill">${escapeHtml(bpmText)}<small>BPM</small></span>
             ${bpmRange ? `<small class="bpm-range">${escapeHtml(bpmRange)}</small>` : ""}
           </td>
+          <td>${openLink}</td>
+          <td><div class="source-tags">${renderSourceTags(group)}</div></td>
           <td>
             <button class="log-button" data-log-key="${escapeAttr(group.key)}">${group.records.length} logs</button>
           </td>
-          <td><div class="source-tags">${renderSourceTags(group)}</div></td>
-          <td>${openLink}</td>
         </tr>
       `;
     })
@@ -412,6 +418,49 @@ function setupNavigation() {
   });
 }
 
+function updateSortHeaders() {
+  const [activeKey, direction] = state.sort.split("-");
+
+  document.querySelectorAll("[data-sort-key]").forEach((button) => {
+    const key = button.dataset.sortKey;
+    const mark = button.querySelector(".sort-mark");
+
+    button.classList.toggle("active", key === activeKey);
+
+    if (mark) {
+      mark.textContent = key === activeKey
+        ? direction === "asc" ? "▲" : "▼"
+        : "";
+    }
+  });
+}
+
+function setupTableSortHeaders() {
+  document.querySelectorAll("[data-sort-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.sortKey;
+      const [currentKey, currentDirection] = state.sort.split("-");
+
+      const nextDirection =
+        currentKey === key && currentDirection === "asc"
+          ? "desc"
+          : "asc";
+
+      state.sort = `${key}-${nextDirection}`;
+
+      const sortSelect = $("#sortSelect");
+      if (sortSelect) {
+        const hasOption = Array.from(sortSelect.options).some(
+          (option) => option.value === state.sort
+        );
+        if (hasOption) sortSelect.value = state.sort;
+      }
+
+      applyFilters();
+    });
+  });
+}
+
 function setupControls() {
   $("#searchInput").addEventListener("input", (event) => {
     state.query = event.target.value;
@@ -450,6 +499,7 @@ function escapeAttr(value) {
 async function init() {
   setupNavigation();
   setupControls();
+  setupTableSortHeaders();
 
   try {
   const response = await fetch("./songs.json", { cache: "no-store" });

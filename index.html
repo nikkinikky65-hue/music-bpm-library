@@ -70,14 +70,34 @@
           <table class="library-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Artist</th>
-                <th>Avg</th>
-                <th>Logs</th>
-                <th>Source</th>
-                <th>Open</th>
-              </tr>
-            </thead>
+                <th>
+                  <button class="th-sort" data-sort-key="title">
+                    Title <span class="sort-mark"></span>
+                  </button>
+                </th>
+                <th>
+                  <button class="th-sort" data-sort-key="artist">
+                    Artist <span class="sort-mark"></span>
+                  </button>
+                </th>
+    <th>
+      <button class="th-sort" data-sort-key="bpm">
+        BPM <span class="sort-mark"></span>
+      </button>
+    </th>
+    <th>Open</th>
+    <th>
+      <button class="th-sort" data-sort-key="source">
+        Source <span class="sort-mark"></span>
+      </button>
+    </th>
+    <th>
+      <button class="th-sort" data-sort-key="logs">
+        Logs <span class="sort-mark"></span>
+      </button>
+    </th>
+  </tr>
+</thead>
             <tbody id="songTableBody">
               <tr>
                 <td colspan="6" class="loading">songs.json を読み込み中...</td>
