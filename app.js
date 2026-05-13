@@ -373,12 +373,14 @@ function renderTable() {
         ? `<a class="action-link" href="${escapeAttr(toSpotifyUrl(group.spotifyUri))}" target="_blank" rel="noopener" title="Spotifyで開く">▶</a>`
         : `<span class="action-link" aria-label="リンクなし">-</span>`;
 
+      const titleSubText = group.album || "";
+
       return `
         <tr data-key="${escapeAttr(group.key)}">
           <td class="title-cell">
-            <strong>${escapeHtml(group.title)}</strong>
-            <small>${escapeHtml(group.album || group.note || "保存済みBPMデータ")}</small>
-          </td>
+  <strong>${escapeHtml(group.title)}</strong>
+  ${titleSubText ? `<small>${escapeHtml(titleSubText)}</small>` : ""}
+</td>
           <td class="artist-cell" title="${escapeAttr(group.artist)}">
             <span class="artist-line">${escapeHtml(group.artist)}</span>
           </td>
