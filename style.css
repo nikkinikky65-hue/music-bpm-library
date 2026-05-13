@@ -738,15 +738,6 @@ table thead th {
   font-size: 0.84rem;
 }
 
-.artist-card-meta {
-  display: grid;
-  gap: 4px;
-  text-align: right;
-  white-space: nowrap;
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
 .artist-card-meta strong {
   color: var(--text);
   font-size: 0.9rem;

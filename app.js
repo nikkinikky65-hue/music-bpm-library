@@ -490,49 +490,40 @@ function splitArtistNames(artistText) {
 }
 
 function buildArtistRows() {
-  const masterMap = new Map();
+  const artistMap = new Map();
 
   for (const artist of state.artistMasters) {
     if (!artist?.name) continue;
-    masterMap.set(artist.name, {
+    artistMap.set(artist.name, {
       name: artist.name,
-      kana: artist.kana || "",
       records: [],
     });
   }
 
   for (const record of state.records) {
     for (const name of splitArtistNames(record.artist)) {
-      if (!masterMap.has(name)) {
-        masterMap.set(name, {
+      if (!artistMap.has(name)) {
+        artistMap.set(name, {
           name,
-          kana: "",
           records: [],
         });
       }
-      masterMap.get(name).records.push(record);
+      artistMap.get(name).records.push(record);
     }
   }
 
-  return Array.from(masterMap.values())
+  return Array.from(artistMap.values())
     .map((artist) => {
-      const validBpms = artist.records
-        .map((record) => Number(record.bpm))
-        .filter((bpm) => Number.isFinite(bpm) && bpm > 0);
-
-      const avgBpm = validBpms.length
-        ? validBpms.reduce((sum, bpm) => sum + bpm, 0) / validBpms.length
-        : null;
+      const songCount = new Set(
+        artist.records.map((record) =>
+          `${normalizeText(record.title)}|${normalizeText(record.artist)}`
+        )
+      ).size;
 
       return {
         ...artist,
-        songCount: new Set(
-          artist.records.map((record) =>
-            `${normalizeText(record.title)}|${normalizeText(record.artist)}`
-          )
-        ).size,
+        songCount,
         recordCount: artist.records.length,
-        avgBpm,
       };
     })
     .sort((a, b) => normalizeText(a.name).localeCompare(normalizeText(b.name), "ja"));
@@ -547,11 +538,7 @@ function renderArtists() {
 
   if (query) {
     artists = artists.filter((artist) => {
-      const haystack = normalizeText([
-        artist.name,
-        artist.kana,
-      ].join(" "));
-      return haystack.includes(query);
+      return normalizeText(artist.name).includes(query);
     });
   }
 
@@ -561,18 +548,14 @@ function renderArtists() {
   }
 
   wrapper.innerHTML = artists.map((artist) => {
-    const bpmText = artist.avgBpm ? `${Math.round(artist.avgBpm)} BPM` : "-";
-
     return `
       <article class="artist-card" data-artist="${escapeAttr(artist.name)}">
         <div>
           <h3>${escapeHtml(artist.name)}</h3>
-          <p>${escapeHtml(artist.kana || "ふりがな未登録")}</p>
         </div>
         <div class="artist-card-meta">
           <span>${artist.songCount} songs</span>
           <span>${artist.recordCount} logs</span>
-          <strong>${escapeHtml(bpmText)}</strong>
         </div>
       </article>
     `;
