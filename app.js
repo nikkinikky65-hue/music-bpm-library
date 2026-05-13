@@ -548,18 +548,19 @@ function renderArtists() {
   }
 
   wrapper.innerHTML = artists.map((artist) => {
-    return `
-      <article class="artist-card" data-artist="${escapeAttr(artist.name)}">
-        <div>
-          <h3>${escapeHtml(artist.name)}</h3>
-        </div>
-        <div class="artist-card-meta">
-          <span>${artist.songCount} songs</span>
-          <span>${artist.recordCount} logs</span>
-        </div>
-      </article>
-    `;
-  }).join("");
+  return `
+    <article class="artist-card" data-artist="${escapeAttr(artist.name)}">
+      <div class="artist-card-main">
+        <h3>${escapeHtml(artist.name)}</h3>
+      </div>
+
+      <div class="artist-card-meta">
+        <span>${artist.songCount} songs</span>
+        <span>${artist.recordCount} logs</span>
+      </div>
+    </article>
+  `;
+}).join("");
 
   wrapper.querySelectorAll("[data-artist]").forEach((card) => {
     card.addEventListener("click", () => {
