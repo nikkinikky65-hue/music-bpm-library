@@ -5,7 +5,19 @@ const state = {
   sourceFilter: "all",
   query: "",
   sort: "title-asc",
+  bpmTarget: null,
+  bpmTolerance: 5,
 };
+
+const BPM_TARGETS = [
+  { label: "Tango", shortLabel: "T", bpm: 128 },
+  { label: "Slow", shortLabel: "SF", bpm: 120 },
+  { label: "Quick", shortLabel: "Q", bpm: 200 },
+  { label: "Cha Cha", shortLabel: "C", bpm: 124 },
+  { label: "Samba", shortLabel: "S", bpm: 200 },
+  { label: "Rumba", shortLabel: "R", bpm: 96 },
+  { label: "Jive", shortLabel: "J", bpm: 172 },
+];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -170,6 +182,101 @@ function populateSourceFilter() {
   }
 }
 
+function bpmMatches(group) {
+  if (!state.bpmTarget) return true;
+  if (!Number.isFinite(group.avgBpm)) return false;
+
+  const min = state.bpmTarget - state.bpmTolerance;
+  const max = state.bpmTarget + state.bpmTolerance;
+
+  return group.avgBpm >= min && group.avgBpm <= max;
+}
+
+function updateBpmFilterStatus() {
+  const status = $("#bpmFilterStatus");
+  if (!status) return;
+
+  if (!state.bpmTarget) {
+    status.textContent = "BPM指定なし";
+    return;
+  }
+
+  status.textContent = `${state.bpmTarget} BPM ± ${state.bpmTolerance}`;
+}
+
+function renderBpmTargetButtons() {
+  const wrapper = $("#bpmTargetButtons");
+  if (!wrapper) return;
+
+  wrapper.innerHTML = BPM_TARGETS.map((target) => `
+    <button
+      type="button"
+      class="bpm-target-button"
+      data-bpm="${target.bpm}"
+      data-label="${escapeAttr(target.label)}"
+      title="${escapeAttr(target.label)} ${target.bpm} BPM"
+    >
+      <strong>${escapeHtml(target.shortLabel)}</strong>
+      <span>${target.bpm}</span>
+    </button>
+  `).join("");
+
+  wrapper.querySelectorAll("[data-bpm]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const bpm = Number(button.dataset.bpm);
+
+      if (state.bpmTarget === bpm && button.classList.contains("active")) {
+        state.bpmTarget = null;
+      } else {
+        state.bpmTarget = bpm;
+      }
+
+      updateBpmTargetButtons();
+      updateBpmFilterStatus();
+      applyFilters();
+    });
+  });
+
+  updateBpmTargetButtons();
+}
+
+function updateBpmTargetButtons() {
+  document.querySelectorAll("[data-bpm]").forEach((button) => {
+    const bpm = Number(button.dataset.bpm);
+    button.classList.toggle("active", state.bpmTarget === bpm);
+  });
+}
+
+function setupBpmFilterControls() {
+  renderBpmTargetButtons();
+
+  const toleranceInput = $("#bpmToleranceInput");
+  if (toleranceInput) {
+    toleranceInput.addEventListener("input", (event) => {
+      const value = Number(event.target.value);
+      state.bpmTolerance = Number.isFinite(value) ? Math.max(0, value) : 0;
+      updateBpmFilterStatus();
+      applyFilters();
+    });
+  }
+
+  const clearButton = $("#clearBpmFilter");
+  if (clearButton) {
+    clearButton.addEventListener("click", () => {
+      state.bpmTarget = null;
+      state.bpmTolerance = 5;
+
+      if (toleranceInput) toleranceInput.value = "5";
+
+      updateBpmTargetButtons();
+      updateBpmFilterStatus();
+      applyFilters();
+    });
+  }
+
+  updateBpmFilterStatus();
+}
+
 function applyFilters() {
   const query = normalizeText(state.query);
   let groups = [...state.groups];
@@ -190,6 +297,10 @@ function applyFilters() {
       ].join(" "));
       return haystack.includes(query);
     });
+  }
+
+  if (state.bpmTarget) {
+    groups = groups.filter(bpmMatches);
   }
 
   const [sortKey, direction] = state.sort.split("-");
@@ -472,10 +583,13 @@ function setupControls() {
     applyFilters();
   });
 
-  $("#sortSelect").addEventListener("change", (event) => {
-    state.sort = event.target.value;
-    applyFilters();
-  });
+  const sortSelect = $("#sortSelect");
+  if (sortSelect) {
+    sortSelect.addEventListener("change", (event) => {
+      state.sort = event.target.value;
+      applyFilters();
+    });
+  }
 
   $("#closeDetail").addEventListener("click", closeDetail);
   document.addEventListener("keydown", (event) => {
