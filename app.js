@@ -6,11 +6,7 @@ const state = {
   query: "",
   sort: "title-asc",
   bpmTarget: null,
-<<<<<<< HEAD
-  bpmTolerance: 5,
-=======
   bpmToleranceRatio: 0.03,
->>>>>>> 0b952ac7e0de8f22c151c9903a3e2745355aa72a
 };
 
 const BPM_TARGETS = [
@@ -190,12 +186,6 @@ function bpmMatches(group) {
   if (!state.bpmTarget) return true;
   if (!Number.isFinite(group.avgBpm)) return false;
 
-<<<<<<< HEAD
-  const min = state.bpmTarget - state.bpmTolerance;
-  const max = state.bpmTarget + state.bpmTolerance;
-
-  return group.avgBpm >= min && group.avgBpm <= max;
-=======
   const targets = [
     state.bpmTarget,
     state.bpmTarget / 2,
@@ -206,7 +196,6 @@ function bpmMatches(group) {
     const max = target * (1 + state.bpmToleranceRatio);
     return group.avgBpm >= min && group.avgBpm <= max;
   });
->>>>>>> 0b952ac7e0de8f22c151c9903a3e2745355aa72a
 }
 
 function updateBpmFilterStatus() {
@@ -218,13 +207,9 @@ function updateBpmFilterStatus() {
     return;
   }
 
-  status.textContent = `${state.bpmTarget} BPM ± ${state.bpmTolerance}`;
-<<<<<<< HEAD
-=======
   const percent = Math.round(state.bpmToleranceRatio * 100);
-status.textContent =
-  `${state.bpmTarget} BPM / ${Math.round(state.bpmTarget / 2)} BPM ±${percent}%`;
->>>>>>> 0b952ac7e0de8f22c151c9903a3e2745355aa72a
+  status.textContent =
+    `${state.bpmTarget} BPM / ${Math.round(state.bpmTarget / 2)} BPM ±${percent}%`;
 }
 
 function renderBpmTargetButtons() {
@@ -277,15 +262,11 @@ function setupBpmFilterControls() {
   if (toleranceInput) {
     toleranceInput.addEventListener("input", (event) => {
       const value = Number(event.target.value);
-<<<<<<< HEAD
-      state.bpmTolerance = Number.isFinite(value) ? Math.max(0, value) : 0;
-=======
-      state.bpmToleranceRatio = Number.isFinite(value)
+state.bpmToleranceRatio = Number.isFinite(value)
   ? Math.max(0, value) / 100
   : 0;
->>>>>>> 0b952ac7e0de8f22c151c9903a3e2745355aa72a
-      updateBpmFilterStatus();
-      applyFilters();
+updateBpmFilterStatus();
+applyFilters();
     });
   }
 
@@ -293,18 +274,12 @@ function setupBpmFilterControls() {
   if (clearButton) {
     clearButton.addEventListener("click", () => {
       state.bpmTarget = null;
-<<<<<<< HEAD
-      state.bpmTolerance = 5;
-
-      if (toleranceInput) toleranceInput.value = "5";
-
-=======
-      state.bpmToleranceRatio = 0.03;
+state.bpmToleranceRatio = 0.03;
 if (toleranceInput) toleranceInput.value = "3";
->>>>>>> 0b952ac7e0de8f22c151c9903a3e2745355aa72a
-      updateBpmTargetButtons();
-      updateBpmFilterStatus();
-      applyFilters();
+
+updateBpmTargetButtons();
+updateBpmFilterStatus();
+applyFilters();
     });
   }
 
