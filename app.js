@@ -17,6 +17,46 @@ function normalizeText(value) {
     .replace(/\s+/g, " ");
 }
 
+function parseSourceMetadata(record) {
+  if (record.sourceMetadata && typeof record.sourceMetadata === "object") {
+    return record.sourceMetadata;
+  }
+  if (!record.sourceMetadataJson) return {};
+  try {
+    return JSON.parse(record.sourceMetadataJson);
+  } catch (error) {
+    console.warn("sourceMetadataJson parse failed", record.title, error);
+    return {};
+  }
+}
+
+function prepareRecord(record) {
+  const sourceMetadata = parseSourceMetadata(record);
+  return {
+    ...record,
+    sourceMetadata,
+    album: record.album || record.sourceAlbumTitle || sourceMetadata.album || "",
+    contextTitle:
+      record.contextTitle ||
+      record.spotifyContextTitle ||
+      sourceMetadata.spotifyContextTitle ||
+      sourceMetadata.contextTitle ||
+      "",
+    contextUri:
+      record.contextUri ||
+      record.spotifyContextUri ||
+      sourceMetadata.spotifyContextUri ||
+      sourceMetadata.contextUri ||
+      "",
+    spotifyUri:
+      record.spotifyUri ||
+      record.mediaId ||
+      sourceMetadata.mediaId ||
+      sourceMetadata.spotifyUri ||
+      "",
+  };
+}
+
 function formatDate(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -412,18 +452,27 @@ async function init() {
   setupControls();
 
   try {
-    const response = await fetch("./songs.json", { cache: "no-store" });
-    const data = await response.json();
-    state.records = Array.isArray(data.records) ? data.records : Array.isArray(data) ? data : [];
-    state.groups = groupRecords(state.records);
-    updateStats();
-    populateSourceFilter();
-    renderPlaylists();
-    applyFilters();
-  } catch (error) {
-    console.error(error);
-    $("#songTableBody").innerHTML = `<tr><td colspan="6" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
-  }
+  const response = await fetch("./songs.json", { cache: "no-store" });
+  const data = await response.json();
+
+  const rawRecords = Array.isArray(data.tapRecords)
+    ? data.tapRecords
+    : Array.isArray(data.records)
+      ? data.records
+      : Array.isArray(data)
+        ? data
+        : [];
+
+  state.records = rawRecords.map(prepareRecord);
+  state.groups = groupRecords(state.records);
+  updateStats();
+  populateSourceFilter();
+  renderPlaylists();
+  applyFilters();
+} catch (error) {
+  console.error(error);
+  $("#songTableBody").innerHTML = `<tr><td colspan="6" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
+}
 }
 
 init();
