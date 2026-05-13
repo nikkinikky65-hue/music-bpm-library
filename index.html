@@ -17,6 +17,7 @@
       </div>
       <nav class="nav-pills" aria-label="sections">
         <button class="pill active" data-section="library">Library</button>
+        <button class="pill" data-section="artists">Artists</button>
         <button class="pill" data-section="playlists">Playlist Context</button>
         <button class="pill" data-section="about">About</button>
       </nav>
@@ -48,7 +49,7 @@
         </div>
       </section>
 
-      <section id="section-library" class="section-block active-section">
+<section id="section-library" class="section-block active-section">
   <div class="toolbar">
     <label class="search-box">
       <span>Search</span>
@@ -78,8 +79,6 @@
   </div>
 
   <div class="library-table-wrap">
-
-
           <table class="library-table">
             <thead>
               <tr>
@@ -119,6 +118,22 @@
           </table>
         </div>
       </section>
+
+      <section id="section-artists" class="section-block">
+  <div class="section-heading">
+    <p class="eyebrow">Artist Catalog</p>
+    <h2>アーティスト一覧</h2>
+    <p>
+      アプリ側で蓄積されたアーティスト情報を、保存曲数・ふりがな・平均BPMとあわせて表示します。
+    </p>
+  </div>
+
+  <div class="artist-toolbar">
+    <input id="artistSearchInput" type="search" placeholder="アーティスト名・ふりがなで検索">
+  </div>
+
+  <div id="artistCards" class="artist-grid"></div>
+</section>
 
       <section id="section-playlists" class="section-block">
         <div class="section-heading">

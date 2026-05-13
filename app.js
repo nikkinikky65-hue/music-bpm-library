@@ -2,6 +2,8 @@ const state = {
   records: [],
   groups: [],
   filteredGroups: [],
+  artistMasters: [],
+  artistQuery: "",
   sourceFilter: "all",
   query: "",
   sort: "title-asc",
@@ -480,6 +482,123 @@ function closeDetail() {
   panel.setAttribute("aria-hidden", "true");
 }
 
+function splitArtistNames(artistText) {
+  return String(artistText || "")
+    .split(" / ")
+    .map((name) => name.trim())
+    .filter(Boolean);
+}
+
+function buildArtistRows() {
+  const masterMap = new Map();
+
+  for (const artist of state.artistMasters) {
+    if (!artist?.name) continue;
+    masterMap.set(artist.name, {
+      name: artist.name,
+      kana: artist.kana || "",
+      records: [],
+    });
+  }
+
+  for (const record of state.records) {
+    for (const name of splitArtistNames(record.artist)) {
+      if (!masterMap.has(name)) {
+        masterMap.set(name, {
+          name,
+          kana: "",
+          records: [],
+        });
+      }
+      masterMap.get(name).records.push(record);
+    }
+  }
+
+  return Array.from(masterMap.values())
+    .map((artist) => {
+      const validBpms = artist.records
+        .map((record) => Number(record.bpm))
+        .filter((bpm) => Number.isFinite(bpm) && bpm > 0);
+
+      const avgBpm = validBpms.length
+        ? validBpms.reduce((sum, bpm) => sum + bpm, 0) / validBpms.length
+        : null;
+
+      return {
+        ...artist,
+        songCount: new Set(
+          artist.records.map((record) =>
+            `${normalizeText(record.title)}|${normalizeText(record.artist)}`
+          )
+        ).size,
+        recordCount: artist.records.length,
+        avgBpm,
+      };
+    })
+    .sort((a, b) => normalizeText(a.name).localeCompare(normalizeText(b.name), "ja"));
+}
+
+function renderArtists() {
+  const wrapper = $("#artistCards");
+  if (!wrapper) return;
+
+  const query = normalizeText(state.artistQuery);
+  let artists = buildArtistRows();
+
+  if (query) {
+    artists = artists.filter((artist) => {
+      const haystack = normalizeText([
+        artist.name,
+        artist.kana,
+      ].join(" "));
+      return haystack.includes(query);
+    });
+  }
+
+  if (!artists.length) {
+    wrapper.innerHTML = `<div class="artist-card"><p>該当するアーティストはありません。</p></div>`;
+    return;
+  }
+
+  wrapper.innerHTML = artists.map((artist) => {
+    const bpmText = artist.avgBpm ? `${Math.round(artist.avgBpm)} BPM` : "-";
+
+    return `
+      <article class="artist-card" data-artist="${escapeAttr(artist.name)}">
+        <div>
+          <h3>${escapeHtml(artist.name)}</h3>
+          <p>${escapeHtml(artist.kana || "ふりがな未登録")}</p>
+        </div>
+        <div class="artist-card-meta">
+          <span>${artist.songCount} songs</span>
+          <span>${artist.recordCount} logs</span>
+          <strong>${escapeHtml(bpmText)}</strong>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  wrapper.querySelectorAll("[data-artist]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const artistName = card.dataset.artist;
+      state.query = artistName;
+
+      const searchInput = $("#searchInput");
+      if (searchInput) searchInput.value = artistName;
+
+      document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
+      document.querySelector('[data-section="library"]')?.classList.add("active");
+
+      document.querySelectorAll(".section-block").forEach((section) => {
+        section.classList.remove("active-section");
+      });
+      $("#section-library")?.classList.add("active-section");
+
+      applyFilters();
+    });
+  });
+}
+
 function renderPlaylists() {
   const wrapper = $("#playlistCards");
   const map = new Map();
@@ -606,6 +725,14 @@ function setupControls() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeDetail();
   });
+
+  const artistSearchInput = $("#artistSearchInput");
+if (artistSearchInput) {
+  artistSearchInput.addEventListener("input", (event) => {
+    state.artistQuery = event.target.value;
+    renderArtists();
+  });
+}
 }
 
 function escapeHtml(value) {
@@ -640,11 +767,14 @@ async function init() {
         : [];
 
   state.records = rawRecords.map(prepareRecord);
-  state.groups = groupRecords(state.records);
-  updateStats();
-  populateSourceFilter();
-  renderPlaylists();
-  applyFilters();
+state.artistMasters = Array.isArray(data.artistMasters) ? data.artistMasters : [];
+state.groups = groupRecords(state.records);
+
+updateStats();
+populateSourceFilter();
+renderArtists();
+renderPlaylists();
+applyFilters();
 } catch (error) {
   console.error(error);
   $("#songTableBody").innerHTML = `<tr><td colspan="6" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
