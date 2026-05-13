@@ -6,6 +6,7 @@
   <title>BPM Library | Music Tempo Archive</title>
   <meta name="description" content="保存したBPM測定結果を、曲・アーティスト・取得元・プレイリスト文脈で整理するBPMライブラリ。" />
   <link rel="stylesheet" href="./style.css" />
+
 </head>
 <body>
   <div class="app-shell">
@@ -47,6 +48,7 @@
         </div>
       </section>
 
+<<<<<<< HEAD
       <section id="section-library" class="section-block active-section">
         <div class="control bpm-search-control">
         <span class="control-label">BPM target</span>
@@ -66,6 +68,38 @@
       </div>
 
         <div class="library-table-wrap">
+=======
+<section id="section-library" class="section-block active-section">
+  <div class="toolbar">
+    <label class="search-box">
+      <span>Search</span>
+      <input id="searchInput" type="search" placeholder="曲名・アーティスト・メモで検索">
+    </label>
+
+    <select id="sourceFilter" aria-label="Source filter">
+      <option value="all">All sources</option>
+    </select>
+
+    <div class="control bpm-search-control">
+      <span class="control-label">BPM target</span>
+
+      <div id="bpmTargetButtons" class="bpm-target-buttons"></div>
+
+      <div class="bpm-range-row">
+        <label>
+          ±
+          <input id="bpmToleranceInput" type="number" min="0" max="50" step="1" value="3">
+<span>%</span>
+        </label>
+        <button id="clearBpmFilter" type="button" class="mini-button">Clear</button>
+      </div>
+
+      <p id="bpmFilterStatus" class="bpm-filter-status">BPM指定なし</p>
+    </div>
+  </div>
+
+  <div class="library-table-wrap">
+>>>>>>> 0b952ac7e0de8f22c151c9903a3e2745355aa72a
           <table class="library-table">
             <thead>
               <tr>
