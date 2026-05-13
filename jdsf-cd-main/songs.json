@@ -1,0 +1,93 @@
+{
+  "records": [
+    {
+      "id": 1,
+      "title": "Bling-Bang-Bang-Born",
+      "artist": "Creepy Nuts",
+      "bpm": 157,
+      "savedAt": "2026-05-09T21:12:00+09:00",
+      "sourceApp": "Spotify",
+      "album": "Bling-Bang-Bang-Born",
+      "note": "高速寄り。種目候補は後でタグ化。",
+      "spotifyUri": "spotify:track:31KpN1N8hYQNo4r0T1zj4Z",
+      "sourceMetadata": {
+        "contextTitle": "練習候補",
+        "contextUri": "spotify:playlist:examplepractice",
+        "album": "Bling-Bang-Bang-Born"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Bling-Bang-Bang-Born",
+      "artist": "Creepy Nuts",
+      "bpm": 158,
+      "savedAt": "2026-05-10T18:40:00+09:00",
+      "sourceApp": "YouTube Music",
+      "album": "",
+      "note": "YTM由来の同一曲ログ。",
+      "sourceMetadata": {
+        "contextTitle": "",
+        "album": ""
+      }
+    },
+    {
+      "id": 3,
+      "title": "怪獣の花唄",
+      "artist": "Vaundy",
+      "bpm": 150,
+      "savedAt": "2026-05-08T12:21:00+09:00",
+      "sourceApp": "Spotify",
+      "album": "strobo",
+      "note": "邦楽を踊れる形に翻訳する候補。",
+      "spotifyUri": "spotify:track:example1",
+      "sourceMetadata": {
+        "contextTitle": "邦楽ダンス候補",
+        "contextUri": "spotify:playlist:examplejpop",
+        "album": "strobo"
+      }
+    },
+    {
+      "id": 4,
+      "title": "アイドル",
+      "artist": "YOASOBI",
+      "bpm": 166,
+      "savedAt": "2026-05-07T23:05:00+09:00",
+      "sourceApp": "Amazon Music",
+      "album": "アイドル",
+      "note": "アニソン系候補。",
+      "sourceMetadata": {
+        "contextTitle": "",
+        "album": "アイドル"
+      }
+    },
+    {
+      "id": 5,
+      "title": "夜に駆ける",
+      "artist": "YOASOBI",
+      "bpm": 130,
+      "savedAt": "2026-05-06T14:08:00+09:00",
+      "sourceApp": "Spotify",
+      "album": "THE BOOK",
+      "note": "中速。曲調分類のサンプル。",
+      "spotifyUri": "spotify:track:example2",
+      "sourceMetadata": {
+        "contextTitle": "邦楽ダンス候補",
+        "contextUri": "spotify:playlist:examplejpop",
+        "album": "THE BOOK"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Happiness",
+      "artist": "嵐",
+      "bpm": 122,
+      "savedAt": "2026-05-09T00:30:00+09:00",
+      "sourceApp": "Amazon Music",
+      "album": "Happiness",
+      "note": "同名曲問題を考慮するサンプル。",
+      "sourceMetadata": {
+        "album": "Happiness"
+      }
+    }
+  ]
+}

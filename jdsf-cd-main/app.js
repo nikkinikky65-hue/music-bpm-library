@@ -1,0 +1,429 @@
+const state = {
+  records: [],
+  groups: [],
+  filteredGroups: [],
+  sourceFilter: "all",
+  query: "",
+  sort: "title-asc",
+};
+
+const $ = (selector) => document.querySelector(selector);
+
+function normalizeText(value) {
+  return String(value ?? "")
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function sourceName(record) {
+  if (record.sourceApp) return record.sourceApp;
+  const pkg = record.packageName || record.sourcePackage || "";
+  if (pkg.includes("spotify")) return "Spotify";
+  if (pkg.includes("youtube")) return "YouTube Music";
+  if (pkg.includes("amazon")) return "Amazon Music";
+  return "Manual";
+}
+
+function spotifyUri(record) {
+  return (
+    record.spotifyUri ||
+    record.sourceMetadata?.spotifyUri ||
+    record.sourceMetadata?.contextUri ||
+    record.sourceMetadata?.uri ||
+    ""
+  );
+}
+
+function contextTitle(record) {
+  return (
+    record.contextTitle ||
+    record.sourceMetadata?.contextTitle ||
+    record.sourceMetadata?.playlistTitle ||
+    ""
+  );
+}
+
+function albumTitle(record) {
+  return record.album || record.sourceMetadata?.album || "";
+}
+
+function groupRecords(records) {
+  const map = new Map();
+
+  for (const record of records) {
+    const title = record.title || "Unknown Title";
+    const artist = record.artist || "Unknown Artist";
+    const key = `${normalizeText(title)}|${normalizeText(artist)}`;
+
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        title,
+        artist,
+        normalizedTitle: normalizeText(title),
+        normalizedArtist: normalizeText(artist),
+        records: [],
+      });
+    }
+    map.get(key).records.push(record);
+  }
+
+  return Array.from(map.values()).map((group) => {
+    const validBpms = group.records
+      .map((record) => Number(record.bpm))
+      .filter((bpm) => Number.isFinite(bpm) && bpm > 0);
+
+    const avgBpm = validBpms.length
+      ? validBpms.reduce((sum, bpm) => sum + bpm, 0) / validBpms.length
+      : null;
+
+    const latest = [...group.records].sort((a, b) => {
+      return new Date(b.savedAt || b.createdAt || 0) - new Date(a.savedAt || a.createdAt || 0);
+    })[0];
+
+    const sources = Array.from(new Set(group.records.map(sourceName))).sort();
+
+    return {
+      ...group,
+      avgBpm,
+      minBpm: validBpms.length ? Math.min(...validBpms) : null,
+      maxBpm: validBpms.length ? Math.max(...validBpms) : null,
+      latestSavedAt: latest?.savedAt || latest?.createdAt || "",
+      latest,
+      sources,
+      note: latest?.note || group.records.find((record) => record.note)?.note || "",
+      album: albumTitle(latest) || group.records.map(albumTitle).find(Boolean) || "",
+      spotifyUri: group.records.map(spotifyUri).find(Boolean) || "",
+      contextTitle: group.records.map(contextTitle).find(Boolean) || "",
+    };
+  });
+}
+
+function updateStats() {
+  $("#statSongs").textContent = String(state.groups.length);
+  $("#statRecords").textContent = String(state.records.length);
+  const sources = new Set(state.records.map(sourceName));
+  $("#statSources").textContent = String(sources.size);
+}
+
+function populateSourceFilter() {
+  const select = $("#sourceFilter");
+  const sources = Array.from(new Set(state.records.map(sourceName))).sort();
+  for (const source of sources) {
+    const option = document.createElement("option");
+    option.value = source;
+    option.textContent = source;
+    select.appendChild(option);
+  }
+}
+
+function applyFilters() {
+  const query = normalizeText(state.query);
+  let groups = [...state.groups];
+
+  if (state.sourceFilter !== "all") {
+    groups = groups.filter((group) => group.sources.includes(state.sourceFilter));
+  }
+
+  if (query) {
+    groups = groups.filter((group) => {
+      const haystack = normalizeText([
+        group.title,
+        group.artist,
+        group.note,
+        group.album,
+        group.contextTitle,
+        ...group.sources,
+      ].join(" "));
+      return haystack.includes(query);
+    });
+  }
+
+  const [sortKey, direction] = state.sort.split("-");
+  groups.sort((a, b) => {
+    let valueA;
+    let valueB;
+
+    if (sortKey === "title") {
+      valueA = normalizeText(a.title);
+      valueB = normalizeText(b.title);
+    } else if (sortKey === "artist") {
+      valueA = normalizeText(a.artist);
+      valueB = normalizeText(b.artist);
+    } else if (sortKey === "bpm") {
+      valueA = a.avgBpm ?? -1;
+      valueB = b.avgBpm ?? -1;
+    } else if (sortKey === "date") {
+      valueA = new Date(a.latestSavedAt || 0).getTime();
+      valueB = new Date(b.latestSavedAt || 0).getTime();
+    }
+
+    if (valueA < valueB) return direction === "asc" ? -1 : 1;
+    if (valueA > valueB) return direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  state.filteredGroups = groups;
+  renderTable();
+}
+
+function renderSourceTags(group) {
+  return group.sources
+    .map((source) => `<span class="source-tag">${escapeHtml(source)}</span>`)
+    .join("");
+}
+
+function renderTable() {
+  const tbody = $("#songTableBody");
+
+  if (!state.filteredGroups.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">該当する保存曲がありません</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = state.filteredGroups
+    .map((group) => {
+      const bpmText = group.avgBpm ? Math.round(group.avgBpm) : "-";
+      const bpmRange =
+        group.minBpm && group.maxBpm && group.minBpm !== group.maxBpm
+          ? `${Math.round(group.minBpm)}-${Math.round(group.maxBpm)}`
+          : "";
+      const openLink = group.spotifyUri
+        ? `<a class="action-link" href="${escapeAttr(toSpotifyUrl(group.spotifyUri))}" target="_blank" rel="noopener" title="Spotifyで開く">▶</a>`
+        : `<span class="action-link" aria-label="リンクなし">-</span>`;
+
+      return `
+        <tr data-key="${escapeAttr(group.key)}">
+          <td class="title-cell">
+            <strong>${escapeHtml(group.title)}</strong>
+            <small>${escapeHtml(group.album || group.note || "保存済みBPMデータ")}</small>
+          </td>
+          <td class="artist-cell">
+            ${escapeHtml(group.artist)}
+            <small>${escapeHtml(group.contextTitle || "曲単位で集約")}</small>
+          </td>
+          <td>
+            <span class="bpm-pill">${escapeHtml(bpmText)}<small>BPM</small></span>
+            ${bpmRange ? `<small class="bpm-range">${escapeHtml(bpmRange)}</small>` : ""}
+          </td>
+          <td>
+            <button class="log-button" data-log-key="${escapeAttr(group.key)}">${group.records.length} logs</button>
+          </td>
+          <td><div class="source-tags">${renderSourceTags(group)}</div></td>
+          <td>${openLink}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  tbody.querySelectorAll("tr[data-key]").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("a,button")) return;
+      const group = state.groups.find((item) => item.key === row.dataset.key);
+      openDetail(group);
+    });
+  });
+
+  tbody.querySelectorAll("[data-log-key]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      const group = state.groups.find((item) => item.key === event.currentTarget.dataset.logKey);
+      openDetail(group);
+    });
+  });
+}
+
+function toSpotifyUrl(uri) {
+  if (!uri) return "#";
+  if (uri.startsWith("http")) return uri;
+  if (uri.startsWith("spotify:track:")) {
+    return `https://open.spotify.com/track/${uri.replace("spotify:track:", "")}`;
+  }
+  if (uri.startsWith("spotify:playlist:")) {
+    return `https://open.spotify.com/playlist/${uri.replace("spotify:playlist:", "")}`;
+  }
+  return uri;
+}
+
+function openDetail(group) {
+  if (!group) return;
+  const panel = $("#detailPanel");
+  const content = $("#detailContent");
+
+  const bpmText = group.avgBpm ? `${Math.round(group.avgBpm)} BPM` : "-";
+  const spotify = group.spotifyUri
+    ? `<a class="action-link" href="${escapeAttr(toSpotifyUrl(group.spotifyUri))}" target="_blank" rel="noopener">▶ Spotify</a>`
+    : "";
+
+  content.innerHTML = `
+    <div class="detail-title">
+      <p class="eyebrow">Song detail</p>
+      <h2>${escapeHtml(group.title)}</h2>
+      <p>${escapeHtml(group.artist)}</p>
+      ${spotify}
+    </div>
+
+    <div class="detail-meta">
+      <div><span>Average</span><strong>${escapeHtml(bpmText)}</strong></div>
+      <div><span>Logs</span><strong>${group.records.length}</strong></div>
+      <div><span>Latest</span><strong>${escapeHtml(formatDate(group.latestSavedAt))}</strong></div>
+      <div><span>Source</span><strong>${escapeHtml(group.sources.join(" / "))}</strong></div>
+    </div>
+
+    ${group.contextTitle ? `<p><strong>Playlist:</strong> ${escapeHtml(group.contextTitle)}</p>` : ""}
+    ${group.album ? `<p><strong>Album:</strong> ${escapeHtml(group.album)}</p>` : ""}
+    ${group.note ? `<p><strong>Note:</strong> ${escapeHtml(group.note)}</p>` : ""}
+
+    <h3>保存ログ</h3>
+    <div class="log-list">
+      ${group.records
+        .slice()
+        .sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0))
+        .map((record) => `
+          <div class="log-item">
+            <strong>${escapeHtml(record.bpm || "-")} BPM</strong>
+            <span>${escapeHtml(sourceName(record))}</span>
+            <small>${escapeHtml(formatDate(record.savedAt || record.createdAt))}${record.note ? ` / ${escapeHtml(record.note)}` : ""}</small>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
+
+  panel.classList.add("open");
+  panel.setAttribute("aria-hidden", "false");
+}
+
+function closeDetail() {
+  const panel = $("#detailPanel");
+  panel.classList.remove("open");
+  panel.setAttribute("aria-hidden", "true");
+}
+
+function renderPlaylists() {
+  const wrapper = $("#playlistCards");
+  const map = new Map();
+
+  for (const group of state.groups) {
+    for (const record of group.records) {
+      const title = contextTitle(record);
+      if (!title) continue;
+      const key = normalizeText(title);
+      if (!map.has(key)) {
+        map.set(key, {
+          title,
+          uri: record.sourceMetadata?.contextUri || record.contextUri || "",
+          songs: new Map(),
+        });
+      }
+      map.get(key).songs.set(group.key, group);
+    }
+  }
+
+  const playlists = Array.from(map.values());
+
+  if (!playlists.length) {
+    wrapper.innerHTML = `<div class="playlist-card"><p>プレイリスト文脈を持つ保存曲はまだありません。</p></div>`;
+    return;
+  }
+
+  wrapper.innerHTML = playlists
+    .map((playlist) => {
+      const songs = Array.from(playlist.songs.values());
+      const link = playlist.uri
+        ? `<a class="action-link" href="${escapeAttr(toSpotifyUrl(playlist.uri))}" target="_blank" rel="noopener">▶</a>`
+        : "";
+      return `
+        <article class="playlist-card">
+          <h3>${escapeHtml(playlist.title)} ${link}</h3>
+          <p>${songs.length} saved songs</p>
+          <div class="playlist-song-list">
+            ${songs.slice(0, 8).map((song) => `<span>${escapeHtml(song.title)} / ${escapeHtml(song.artist)} / ${Math.round(song.avgBpm || 0)} BPM</span>`).join("")}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function setupNavigation() {
+  document.querySelectorAll(".pill").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+
+      document.querySelectorAll(".section-block").forEach((section) => {
+        section.classList.remove("active-section");
+      });
+      $(`#section-${button.dataset.section}`).classList.add("active-section");
+    });
+  });
+}
+
+function setupControls() {
+  $("#searchInput").addEventListener("input", (event) => {
+    state.query = event.target.value;
+    applyFilters();
+  });
+
+  $("#sourceFilter").addEventListener("change", (event) => {
+    state.sourceFilter = event.target.value;
+    applyFilters();
+  });
+
+  $("#sortSelect").addEventListener("change", (event) => {
+    state.sort = event.target.value;
+    applyFilters();
+  });
+
+  $("#closeDetail").addEventListener("click", closeDetail);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDetail();
+  });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value).replaceAll("`", "&#096;");
+}
+
+async function init() {
+  setupNavigation();
+  setupControls();
+
+  try {
+    const response = await fetch("./songs.json", { cache: "no-store" });
+    const data = await response.json();
+    state.records = Array.isArray(data.records) ? data.records : Array.isArray(data) ? data : [];
+    state.groups = groupRecords(state.records);
+    updateStats();
+    populateSourceFilter();
+    renderPlaylists();
+    applyFilters();
+  } catch (error) {
+    console.error(error);
+    $("#songTableBody").innerHTML = `<tr><td colspan="6" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
+  }
+}
+
+init();
