@@ -6,7 +6,7 @@ const state = {
   query: "",
   sort: "title-asc",
   bpmTarget: null,
-  bpmToleranceRatio: 0.10,
+  bpmToleranceRatio: 0.03,
 };
 
 const BPM_TARGETS = [
@@ -275,9 +275,8 @@ function setupBpmFilterControls() {
   if (clearButton) {
     clearButton.addEventListener("click", () => {
       state.bpmTarget = null;
-      state.bpmToleranceRatio = 0.10;
-if (toleranceInput) toleranceInput.value = "10";
-
+      state.bpmToleranceRatio = 0.03;
+if (toleranceInput) toleranceInput.value = "3";
       updateBpmTargetButtons();
       updateBpmFilterStatus();
       applyFilters();
