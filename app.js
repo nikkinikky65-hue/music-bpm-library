@@ -6,7 +6,7 @@ const state = {
   query: "",
   sort: "title-asc",
   bpmTarget: null,
-  bpmTolerance: 5,
+  bpmToleranceRatio: 0.10,
 };
 
 const BPM_TARGETS = [
@@ -186,10 +186,16 @@ function bpmMatches(group) {
   if (!state.bpmTarget) return true;
   if (!Number.isFinite(group.avgBpm)) return false;
 
-  const min = state.bpmTarget - state.bpmTolerance;
-  const max = state.bpmTarget + state.bpmTolerance;
+  const targets = [
+    state.bpmTarget,
+    state.bpmTarget / 2,
+  ];
 
-  return group.avgBpm >= min && group.avgBpm <= max;
+  return targets.some((target) => {
+    const min = target * (1 - state.bpmToleranceRatio);
+    const max = target * (1 + state.bpmToleranceRatio);
+    return group.avgBpm >= min && group.avgBpm <= max;
+  });
 }
 
 function updateBpmFilterStatus() {
@@ -202,6 +208,9 @@ function updateBpmFilterStatus() {
   }
 
   status.textContent = `${state.bpmTarget} BPM ± ${state.bpmTolerance}`;
+  const percent = Math.round(state.bpmToleranceRatio * 100);
+status.textContent =
+  `${state.bpmTarget} BPM / ${Math.round(state.bpmTarget / 2)} BPM ±${percent}%`;
 }
 
 function renderBpmTargetButtons() {
@@ -254,7 +263,9 @@ function setupBpmFilterControls() {
   if (toleranceInput) {
     toleranceInput.addEventListener("input", (event) => {
       const value = Number(event.target.value);
-      state.bpmTolerance = Number.isFinite(value) ? Math.max(0, value) : 0;
+      state.bpmToleranceRatio = Number.isFinite(value)
+  ? Math.max(0, value) / 100
+  : 0;
       updateBpmFilterStatus();
       applyFilters();
     });
@@ -264,9 +275,8 @@ function setupBpmFilterControls() {
   if (clearButton) {
     clearButton.addEventListener("click", () => {
       state.bpmTarget = null;
-      state.bpmTolerance = 5;
-
-      if (toleranceInput) toleranceInput.value = "5";
+      state.bpmToleranceRatio = 0.10;
+if (toleranceInput) toleranceInput.value = "10";
 
       updateBpmTargetButtons();
       updateBpmFilterStatus();
