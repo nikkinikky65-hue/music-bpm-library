@@ -13,7 +13,7 @@ const state = {
 
 const BPM_TARGETS = [
   { label: "Tango", shortLabel: "T", bpm: 128 },
-  { label: "Slow", shortLabel: "SF", bpm: 120 },
+  { label: "Foxtrot", shortLabel: "F", bpm: 118 },
   { label: "Quick", shortLabel: "Q", bpm: 200 },
   { label: "Cha Cha", shortLabel: "C", bpm: 124 },
   { label: "Samba", shortLabel: "S", bpm: 200 },
