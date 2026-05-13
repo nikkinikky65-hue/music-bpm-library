@@ -614,6 +614,7 @@ async function init() {
   setupNavigation();
   setupControls();
   setupTableSortHeaders();
+  setupBpmFilterControls();
 
   try {
   const response = await fetch("./songs.json", { cache: "no-store" });

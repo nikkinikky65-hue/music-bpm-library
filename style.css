@@ -548,3 +548,91 @@ table thead th {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.bpm-search-control {
+  min-width: min(100%, 360px);
+}
+
+.control-label {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.72;
+  margin-bottom: 8px;
+}
+
+.bpm-target-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bpm-target-button {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+.bpm-target-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.bpm-target-button.active {
+  border-color: rgba(120, 180, 255, 0.7);
+  background: rgba(120, 180, 255, 0.18);
+}
+
+.bpm-target-button strong {
+  font-size: 0.86rem;
+}
+
+.bpm-target-button span {
+  font-size: 0.78rem;
+  opacity: 0.78;
+}
+
+.bpm-range-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bpm-range-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+#bpmToleranceInput {
+  width: 64px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  padding: 6px 8px;
+}
+
+.mini-button {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.bpm-filter-status {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
