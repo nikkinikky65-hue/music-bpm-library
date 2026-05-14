@@ -106,6 +106,15 @@ function spotifyUri(record) {
   ) || "";
 }
 
+function contextTitle(record) {
+  return (
+    record.contextTitle ||
+    record.sourceMetadata?.contextTitle ||
+    record.sourceMetadata?.playlistTitle ||
+    ""
+  );
+}
+
 function albumTitle(record) {
   return record.album || record.sourceMetadata?.album || "";
 }
