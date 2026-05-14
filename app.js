@@ -244,6 +244,7 @@ function renderBpmTargetButtons() {
       updateBpmTargetButtons();
       updateBpmFilterStatus();
       applyFilters();
+      updateUrlFromState();
     });
   });
 
@@ -269,6 +270,7 @@ state.bpmToleranceRatio = Number.isFinite(value)
   : 0;
 updateBpmFilterStatus();
 applyFilters();
+updateUrlFromState();
     });
   }
 
@@ -282,6 +284,7 @@ if (toleranceInput) toleranceInput.value = "3";
 updateBpmTargetButtons();
 updateBpmFilterStatus();
 applyFilters();
+updateUrlFromState();
     });
   }
 
@@ -658,6 +661,7 @@ function setupNavigation() {
         section.classList.remove("active-section");
       });
       $(`#section-${button.dataset.section}`).classList.add("active-section");
+      updateUrlFromState();
     });
   });
 }
@@ -701,6 +705,7 @@ function setupTableSortHeaders() {
       }
 
       applyFilters();
+      updateUrlFromState();
     });
   });
 }
@@ -853,9 +858,10 @@ renderArtists?.();
 renderPlaylists();
 syncControlsFromState();
 applyFilters();
+updateUrlFromState();
 } catch (error) {
   console.error(error);
-  $("#songTableBody").innerHTML = `<tr><td colspan="6" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
+  $("#songTableBody").innerHTML = `<tr><td colspan="7" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
 }
 }
 
