@@ -92,22 +92,18 @@ function sourceName(record) {
 }
 
 function spotifyUri(record) {
-  return (
-    record.spotifyUri ||
-    record.sourceMetadata?.spotifyUri ||
-    record.sourceMetadata?.contextUri ||
-    record.sourceMetadata?.uri ||
-    ""
-  );
-}
+  const candidates = [
+    record.spotifyUri,
+    record.sourceMetadata?.spotifyUri,
+    record.sourceMetadata?.contextUri,
+    record.sourceMetadata?.uri,
+    record.mediaId,
+  ].filter(Boolean);
 
-function contextTitle(record) {
-  return (
-    record.contextTitle ||
-    record.sourceMetadata?.contextTitle ||
-    record.sourceMetadata?.playlistTitle ||
-    ""
-  );
+  return candidates.find((uri) =>
+    String(uri).startsWith("spotify:") ||
+    String(uri).includes("open.spotify.com")
+  ) || "";
 }
 
 function albumTitle(record) {
