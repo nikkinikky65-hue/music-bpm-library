@@ -244,7 +244,7 @@ function renderBpmTargetButtons() {
       updateBpmTargetButtons();
       updateBpmFilterStatus();
       applyFilters();
-      updateUrlFromState();
+      updateUrlFromState("push");
     });
   });
 
@@ -270,7 +270,7 @@ state.bpmToleranceRatio = Number.isFinite(value)
   : 0;
 updateBpmFilterStatus();
 applyFilters();
-updateUrlFromState();
+updateUrlFromState("push");
     });
   }
 
@@ -284,7 +284,7 @@ if (toleranceInput) toleranceInput.value = "3";
 updateBpmTargetButtons();
 updateBpmFilterStatus();
 applyFilters();
-updateUrlFromState();
+updateUrlFromState("push");
     });
   }
 
@@ -661,7 +661,7 @@ function setupNavigation() {
         section.classList.remove("active-section");
       });
       $(`#section-${button.dataset.section}`).classList.add("active-section");
-      updateUrlFromState();
+      updateUrlFromState("push");
     });
   });
 }
@@ -705,7 +705,7 @@ function setupTableSortHeaders() {
       }
 
       applyFilters();
-      updateUrlFromState();
+      updateUrlFromState("push");
     });
   });
 }
@@ -713,30 +713,29 @@ function setupTableSortHeaders() {
 function readStateFromUrl() {
   const params = new URLSearchParams(window.location.search);
 
-  const q = params.get("q");
-  const source = params.get("source");
+  const q = params.get("q") || "";
+  const source = params.get("source") || "all";
   const bpm = params.get("bpm");
   const range = params.get("range");
-  const sort = params.get("sort");
-  const section = params.get("section");
+  const sort = params.get("sort") || "title-asc";
+  const section = params.get("section") || "library";
 
-  if (q) state.query = q;
-  if (source) state.sourceFilter = source;
-  if (bpm && Number.isFinite(Number(bpm))) state.bpmTarget = Number(bpm);
-  if (range && Number.isFinite(Number(range))) {
-    state.bpmToleranceRatio = Math.max(0, Number(range)) / 100;
-  }
-  if (sort) state.sort = sort;
+  state.query = q;
+  state.sourceFilter = source;
+  state.bpmTarget = bpm && Number.isFinite(Number(bpm)) ? Number(bpm) : null;
+  state.bpmToleranceRatio =
+    range && Number.isFinite(Number(range))
+      ? Math.max(0, Number(range)) / 100
+      : 0.03;
+  state.sort = sort;
 
-  if (section) {
-    document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
-    document.querySelector(`[data-section="${CSS.escape(section)}"]`)?.classList.add("active");
+  document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
+  document.querySelector(`[data-section="${CSS.escape(section)}"]`)?.classList.add("active");
 
-    document.querySelectorAll(".section-block").forEach((item) => {
-      item.classList.remove("active-section");
-    });
-    $(`#section-${section}`)?.classList.add("active-section");
-  }
+  document.querySelectorAll(".section-block").forEach((item) => {
+    item.classList.remove("active-section");
+  });
+  $(`#section-${section}`)?.classList.add("active-section");
 }
 
 function syncControlsFromState() {
@@ -756,7 +755,7 @@ function syncControlsFromState() {
   updateSortHeaders();
 }
 
-function updateUrlFromState() {
+function updateUrlFromState(mode = "replace") {
   const params = new URLSearchParams();
 
   const activeSection =
@@ -777,8 +776,27 @@ function updateUrlFromState() {
     ? `${window.location.pathname}?${queryString}`
     : window.location.pathname;
 
-  window.history.replaceState(null, "", nextUrl);
+  if (nextUrl === `${window.location.pathname}${window.location.search}`) {
+    return;
+  }
+
+  if (mode === "push") {
+    window.history.pushState(null, "", nextUrl);
+  } else {
+    window.history.replaceState(null, "", nextUrl);
+  }
 }
+
+function applyStateFromUrl() {
+  readStateFromUrl();
+  syncControlsFromState();
+  renderArtists();
+  applyFilters();
+}
+
+window.addEventListener("popstate", () => {
+  applyStateFromUrl();
+});
 
 function setupControls() {
   $("#searchInput").addEventListener("input", (event) => {
@@ -790,7 +808,7 @@ function setupControls() {
   $("#sourceFilter").addEventListener("change", (event) => {
     state.sourceFilter = event.target.value;
     applyFilters();
-    updateUrlFromState();
+    updateUrlFromState("push");
   });
 
   const sortSelect = $("#sortSelect");
@@ -798,7 +816,7 @@ function setupControls() {
     sortSelect.addEventListener("change", (event) => {
       state.sort = event.target.value;
       applyFilters();
-      updateUrlFromState();
+      updateUrlFromState("push");
     });
   }
 
