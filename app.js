@@ -858,7 +858,7 @@ renderArtists?.();
 renderPlaylists();
 syncControlsFromState();
 applyFilters();
-updateUrlFromState();
+
 } catch (error) {
   console.error(error);
   $("#songTableBody").innerHTML = `<tr><td colspan="7" class="empty">songs.json の読み込みに失敗しました</td></tr>`;
