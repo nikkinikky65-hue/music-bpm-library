@@ -750,3 +750,34 @@ table thead th {
   font-size: 0.78rem;
   line-height: 1.35;
 }
+
+.search-links {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.search-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .library-table {
+    min-width: 620px;
+  }
+
+  .library-table th:nth-child(4),
+  .library-table td:nth-child(4) {
+    width: 86px;
+  }
+}

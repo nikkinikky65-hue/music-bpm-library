@@ -359,7 +359,7 @@ function renderTable() {
   const tbody = $("#songTableBody");
 
   if (!state.filteredGroups.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty">該当する保存曲がありません</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">該当する保存曲がありません</td></tr>`;
     return;
   }
 
@@ -374,6 +374,8 @@ function renderTable() {
         ? `<a class="action-link" href="${escapeAttr(toSpotifyUrl(group.spotifyUri))}" target="_blank" rel="noopener" title="Spotifyで開く">▶</a>`
         : `<span class="action-link" aria-label="リンクなし">-</span>`;
 
+        const searchLinkHtml = searchLinks(group);
+
       const titleSubText = group.album || "";
 
       return `
@@ -386,14 +388,15 @@ function renderTable() {
             <span class="artist-line">${escapeHtml(group.artist)}</span>
           </td>
           <td>
-            <span class="bpm-pill">${escapeHtml(bpmText)}<small>BPM</small></span>
-            ${bpmRange ? `<small class="bpm-range">${escapeHtml(bpmRange)}</small>` : ""}
-          </td>
-          <td>${openLink}</td>
-          <td><div class="source-tags">${renderSourceTags(group)}</div></td>
-          <td>
-            <button class="log-button" data-log-key="${escapeAttr(group.key)}">${group.records.length} logs</button>
-          </td>
+  <span class="bpm-pill">${escapeHtml(bpmText)}<small>BPM</small></span>
+  ${bpmRange ? `<small class="bpm-range">${escapeHtml(bpmRange)}</small>` : ""}
+</td>
+<td>${searchLinkHtml}</td>
+<td>${openLink}</td>
+<td><div class="source-tags">${renderSourceTags(group)}</div></td>
+<td>
+  <button class="log-button" data-log-key="${escapeAttr(group.key)}">${group.records.length} logs</button>
+</td>
         </tr>
       `;
     })
@@ -425,6 +428,22 @@ function toSpotifyUrl(uri) {
     return `https://open.spotify.com/playlist/${uri.replace("spotify:playlist:", "")}`;
   }
   return uri;
+}
+
+function buildSearchQuery(group) {
+  return encodeURIComponent(`${group.title} ${group.artist}`);
+}
+
+function searchLinks(group) {
+  const q = buildSearchQuery(group);
+
+  return `
+    <div class="search-links">
+      <a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener" title="Googleで検索">G</a>
+      <a href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener" title="YouTubeで検索">Y</a>
+      <a href="https://open.spotify.com/search/${q}" target="_blank" rel="noopener" title="Spotifyで検索">S</a>
+    </div>
+  `;
 }
 
 function openDetail(group) {
@@ -686,15 +705,87 @@ function setupTableSortHeaders() {
   });
 }
 
+function readStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+
+  const q = params.get("q");
+  const source = params.get("source");
+  const bpm = params.get("bpm");
+  const range = params.get("range");
+  const sort = params.get("sort");
+  const section = params.get("section");
+
+  if (q) state.query = q;
+  if (source) state.sourceFilter = source;
+  if (bpm && Number.isFinite(Number(bpm))) state.bpmTarget = Number(bpm);
+  if (range && Number.isFinite(Number(range))) {
+    state.bpmToleranceRatio = Math.max(0, Number(range)) / 100;
+  }
+  if (sort) state.sort = sort;
+
+  if (section) {
+    document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
+    document.querySelector(`[data-section="${CSS.escape(section)}"]`)?.classList.add("active");
+
+    document.querySelectorAll(".section-block").forEach((item) => {
+      item.classList.remove("active-section");
+    });
+    $(`#section-${section}`)?.classList.add("active-section");
+  }
+}
+
+function syncControlsFromState() {
+  const searchInput = $("#searchInput");
+  if (searchInput) searchInput.value = state.query;
+
+  const sourceFilter = $("#sourceFilter");
+  if (sourceFilter) sourceFilter.value = state.sourceFilter;
+
+  const toleranceInput = $("#bpmToleranceInput");
+  if (toleranceInput) {
+    toleranceInput.value = String(Math.round(state.bpmToleranceRatio * 100));
+  }
+
+  updateBpmTargetButtons();
+  updateBpmFilterStatus();
+  updateSortHeaders();
+}
+
+function updateUrlFromState() {
+  const params = new URLSearchParams();
+
+  const activeSection =
+    document.querySelector(".pill.active")?.dataset.section || "library";
+
+  if (activeSection !== "library") params.set("section", activeSection);
+  if (state.query) params.set("q", state.query);
+  if (state.sourceFilter !== "all") params.set("source", state.sourceFilter);
+  if (state.bpmTarget) params.set("bpm", String(state.bpmTarget));
+
+  const range = Math.round(state.bpmToleranceRatio * 100);
+  if (range !== 3) params.set("range", String(range));
+
+  if (state.sort !== "title-asc") params.set("sort", state.sort);
+
+  const queryString = params.toString();
+  const nextUrl = queryString
+    ? `${window.location.pathname}?${queryString}`
+    : window.location.pathname;
+
+  window.history.replaceState(null, "", nextUrl);
+}
+
 function setupControls() {
   $("#searchInput").addEventListener("input", (event) => {
     state.query = event.target.value;
     applyFilters();
+    updateUrlFromState();
   });
 
   $("#sourceFilter").addEventListener("change", (event) => {
     state.sourceFilter = event.target.value;
     applyFilters();
+    updateUrlFromState();
   });
 
   const sortSelect = $("#sortSelect");
@@ -702,6 +793,7 @@ function setupControls() {
     sortSelect.addEventListener("change", (event) => {
       state.sort = event.target.value;
       applyFilters();
+      updateUrlFromState();
     });
   }
 
@@ -754,10 +846,12 @@ async function init() {
 state.artistMasters = Array.isArray(data.artistMasters) ? data.artistMasters : [];
 state.groups = groupRecords(state.records);
 
+readStateFromUrl();
 updateStats();
 populateSourceFilter();
-renderArtists();
+renderArtists?.();
 renderPlaylists();
+syncControlsFromState();
 applyFilters();
 } catch (error) {
   console.error(error);
