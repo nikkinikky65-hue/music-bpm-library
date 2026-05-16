@@ -590,24 +590,25 @@ function renderArtists() {
 }).join("");
 
   wrapper.querySelectorAll("[data-artist]").forEach((card) => {
-    card.addEventListener("click", () => {
-      const artistName = card.dataset.artist;
-      state.query = artistName;
+  card.addEventListener("click", () => {
+    const artistName = card.dataset.artist;
+    state.query = artistName;
 
-      const searchInput = $("#searchInput");
-      if (searchInput) searchInput.value = artistName;
+    const searchInput = $("#searchInput");
+    if (searchInput) searchInput.value = artistName;
 
-      document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
-      document.querySelector('[data-section="library"]')?.classList.add("active");
+    document.querySelectorAll(".pill").forEach((item) => item.classList.remove("active"));
+    document.querySelector('[data-section="library"]')?.classList.add("active");
 
-      document.querySelectorAll(".section-block").forEach((section) => {
-        section.classList.remove("active-section");
-      });
-      $("#section-library")?.classList.add("active-section");
-
-      applyFilters();
+    document.querySelectorAll(".section-block").forEach((section) => {
+      section.classList.remove("active-section");
     });
+    $("#section-library")?.classList.add("active-section");
+
+    applyFilters();
+    updateUrlFromState("push");
   });
+});
 }
 
 function renderPlaylists() {
